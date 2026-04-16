@@ -1,0 +1,23 @@
+{
+  "experiment_name": "postprocessor",
+  "mlflow_tracking_uri": "http://127.0.0.1:5000",
+  "dataset_manifest_path": "/home/ec2-user/dataset/manifest.json",
+  "dataset_repo_path": "/home/ec2-user/dataset",
+  "postprocessor_repo_path": "/home/ec2-user/rooter-passport-postprocessor",
+  "output_root": "/home/ec2-user/rooter-experiments/outputs/postprocessor",
+  "selection": {
+    "session_ids": [],
+    "app_run_ids": [],
+    "collection_folders": [],
+    "detector_model_families": []
+  },
+  "postprocessor": {
+    "name": "rooter-passport-postprocessor",
+    "version": "local",
+    "command_template": "python -m your_postprocessor_entrypoint --input {raw_json_path} --frames {frames_path} --output-dir {output_dir}"
+  },
+  "params": {
+    "notes": "Replace command_template with the current postprocessor interface."
+  }
+}
+

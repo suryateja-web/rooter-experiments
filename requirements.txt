@@ -1,2 +1,2 @@
 mlflow>=2.12
-
+munkres>=1.1

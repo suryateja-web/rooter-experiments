@@ -32,11 +32,14 @@ def filter_app_runs(
     app_run_ids = set(selection_config.get("app_run_ids") or [])
     collection_folders = set(selection_config.get("collection_folders") or [])
     detector_families = set(selection_config.get("detector_model_families") or [])
+    include_error_runs = bool(selection_config.get("include_error_runs", False))
 
     filtered = []
     for item in selections:
         session = item.session
         app_run = item.app_run
+        if app_run.get("error") and not include_error_runs:
+            continue
         if session_ids and session.get("session_id") not in session_ids:
             continue
         if app_run_ids and app_run.get("run_id") not in app_run_ids:
@@ -48,4 +51,3 @@ def filter_app_runs(
         filtered.append(item)
 
     return filtered
-

@@ -49,6 +49,22 @@ def write_json(path: Path, value: dict[str, Any]) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n")
 
 
+def log_summary_metrics(output_dir: Path) -> None:
+    summary_path = output_dir / "summary.json"
+    if not summary_path.exists():
+        return
+
+    try:
+        summary = json.loads(summary_path.read_text())
+    except Exception:
+        return
+
+    for key in ("frames_total", "match_count"):
+        value = summary.get(key)
+        if isinstance(value, (int, float)):
+            mlflow.log_metric(key, value)
+
+
 def build_command(template: str, values: dict[str, str]) -> list[str]:
     rendered = template.format(**values)
     return shlex.split(rendered)
@@ -69,6 +85,9 @@ def render_run(
     output_dir = output_root / local_run_name
 
     command_values = {
+        "python_executable": sys.executable,
+        "experiments_repo_path": str(ROOT),
+        "postprocessor_repo_path": config["postprocessor_repo_path"],
         "raw_json_path": app_run["raw_json_path"],
         "frames_path": session["frames_path"],
         "output_dir": str(output_dir),
@@ -155,6 +174,7 @@ def run_one(config: dict[str, Any], session: dict[str, Any], app_run: dict[str, 
         )
 
         mlflow.log_metric("returncode", process.returncode)
+        log_summary_metrics(output_dir)
         mlflow.log_artifacts(str(output_dir))
 
         if process.returncode != 0:
@@ -168,6 +188,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--stop-on-error", action="store_true")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -197,7 +218,15 @@ def main() -> None:
 
     for item in selections:
         print(f"Running {item.session['session_id']} / {item.app_run['run_id']}")
-        run_one(config, item.session, item.app_run)
+        try:
+            run_one(config, item.session, item.app_run)
+        except Exception as exc:
+            print(
+                f"Failed {item.session['session_id']} / {item.app_run['run_id']}: {exc}",
+                file=sys.stderr,
+            )
+            if args.stop_on_error or not config.get("continue_on_error", True):
+                raise
 
 
 if __name__ == "__main__":

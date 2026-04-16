@@ -64,3 +64,6 @@ The command template can use these placeholders:
 
 Each selected app run becomes one MLflow run with dataset/postprocessor git
 commits, app model family tags, config params, and output artifacts.
+
+The current adapter calls the postprocessor's vendored match pipeline directly;
+it does not invoke Lambda, SQS, or AWS services.

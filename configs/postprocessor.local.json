@@ -15,10 +15,11 @@
   "continue_on_error": true,
   "postprocessor": {
     "name": "rooter-passport-postprocessor",
-    "version": "local",
-    "command_template": "python -m your_postprocessor_entrypoint --input {raw_json_path} --frames {frames_path} --output-dir {output_dir}"
+    "version": "current",
+    "command_template": "{python_executable} {experiments_repo_path}/runners/call_current_postprocessor.py --input {raw_json_path} --output-dir {output_dir} --postprocessor-repo {postprocessor_repo_path}"
   },
   "params": {
-    "notes": "Replace command_template with the current postprocessor interface."
+    "adapter": "call_current_postprocessor",
+    "postprocessor_entrypoint": "lambda_session_processor.match_pipeline.run_pipeline"
   }
 }

@@ -16,10 +16,11 @@
   "postprocessor": {
     "name": "rooter-passport-postprocessor",
     "version": "current",
-    "command_template": "{python_executable} {experiments_repo_path}/runners/call_current_postprocessor.py --input {raw_json_path} --output-dir {output_dir} --postprocessor-repo {postprocessor_repo_path}"
+    "command_template": "{python_executable} {experiments_repo_path}/runners/call_current_postprocessor.py --input {raw_json_path} --output-dir {output_dir} --postprocessor-repo {postprocessor_repo_path} --debug"
   },
   "params": {
     "adapter": "call_current_postprocessor",
-    "postprocessor_entrypoint": "lambda_session_processor.match_pipeline.run_pipeline"
+    "postprocessor_entrypoint": "lambda_session_processor.match_pipeline.run_pipeline",
+    "postprocessor_debug": true
   }
 }

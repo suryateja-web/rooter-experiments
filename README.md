@@ -67,3 +67,13 @@ commits, app model family tags, config params, and output artifacts.
 
 The current adapter calls the postprocessor's vendored match pipeline directly;
 it does not invoke Lambda, SQS, or AWS services.
+
+The local postprocessor config enables debug artifacts. MLflow logs everything
+written under the run output directory, including:
+
+- `postprocessor_debug/flattened_detections.json`
+- `postprocessor_debug/tracked_detections.json`
+- `postprocessor_debug/corrected_detections.json`
+- `postprocessor_debug/frame_states.json`
+- `postprocessor_debug/match_summaries.json`
+- `postprocessor_debug/metrics.json`

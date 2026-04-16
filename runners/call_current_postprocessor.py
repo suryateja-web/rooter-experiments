@@ -59,7 +59,11 @@ def flatten_detections(raw: Any, natural_key) -> tuple[list[dict], list[str]]:
     return detections, sorted(frames, key=natural_key)
 
 
-def run_current_postprocessor(input_path: Path, postprocessor_repo: Path) -> dict:
+def run_current_postprocessor(
+    input_path: Path,
+    postprocessor_repo: Path,
+    debug_dir: Path | None = None,
+) -> dict:
     sys.path.insert(0, str(postprocessor_repo))
 
     from lambda_session_processor.match_pipeline import load_default_rules, run_pipeline
@@ -84,6 +88,7 @@ def run_current_postprocessor(input_path: Path, postprocessor_repo: Path) -> dic
         rules,
         ocr_hook=ocr_hook,
         frame_order_override=frame_order,
+        debug_dir=debug_dir,
     )
     metrics = result.get("metrics") or {}
     return {
@@ -100,6 +105,11 @@ def main() -> None:
         "--postprocessor-repo",
         default="/home/ec2-user/rooter-passport-postprocessor",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Write postprocessor intermediate debug artifacts",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input).resolve()
@@ -112,7 +122,8 @@ def main() -> None:
         raise FileNotFoundError(postprocessor_repo)
 
     started_at = datetime.now(timezone.utc).isoformat()
-    result = run_current_postprocessor(input_path, postprocessor_repo)
+    debug_dir = output_dir / "postprocessor_debug" if args.debug else None
+    result = run_current_postprocessor(input_path, postprocessor_repo, debug_dir=debug_dir)
     completed_at = datetime.now(timezone.utc).isoformat()
 
     matches = result.get("matches", []) if isinstance(result, dict) else []
@@ -128,6 +139,8 @@ def main() -> None:
             "completed_at": completed_at,
             "frames_total": frames_total,
             "match_count": len(matches) if isinstance(matches, list) else 0,
+            "debug_enabled": args.debug,
+            "debug_dir": str(debug_dir) if debug_dir else None,
         },
     )
 

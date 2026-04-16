@@ -54,9 +54,11 @@ def build_command(template: str, values: dict[str, str]) -> list[str]:
     return shlex.split(rendered)
 
 
-def run_one(config: dict[str, Any], session: dict[str, Any], app_run: dict[str, Any]) -> None:
-    dataset_repo_path = config["dataset_repo_path"]
-    postprocessor_repo_path = config["postprocessor_repo_path"]
+def render_run(
+    config: dict[str, Any],
+    session: dict[str, Any],
+    app_run: dict[str, Any],
+) -> tuple[str, Path, list[str]]:
     output_root = Path(config["output_root"])
     postprocessor = config["postprocessor"]
 
@@ -65,7 +67,6 @@ def run_one(config: dict[str, Any], session: dict[str, Any], app_run: dict[str, 
         f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
     )
     output_dir = output_root / local_run_name
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     command_values = {
         "raw_json_path": app_run["raw_json_path"],
@@ -75,6 +76,16 @@ def run_one(config: dict[str, Any], session: dict[str, Any], app_run: dict[str, 
         "app_run_id": app_run["run_id"],
     }
     command = build_command(postprocessor["command_template"], command_values)
+
+    return local_run_name, output_dir, command
+
+
+def run_one(config: dict[str, Any], session: dict[str, Any], app_run: dict[str, Any]) -> None:
+    dataset_repo_path = config["dataset_repo_path"]
+    postprocessor_repo_path = config["postprocessor_repo_path"]
+    postprocessor = config["postprocessor"]
+    local_run_name, output_dir, command = render_run(config, session, app_run)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = {
         "session_id": session["session_id"],
@@ -156,11 +167,10 @@ def run_one(config: dict[str, Any], session: dict[str, Any], app_run: dict[str, 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     config = load_config(args.config)
-    mlflow.set_tracking_uri(config["mlflow_tracking_uri"])
-    mlflow.set_experiment(config["experiment_name"])
 
     manifest = load_manifest(config["dataset_manifest_path"])
     selections = filter_app_runs(
@@ -169,6 +179,22 @@ def main() -> None:
     )
 
     print(f"Selected app runs: {len(selections)}")
+    for item in selections:
+        _local_run_name, output_dir, command = render_run(
+            config,
+            item.session,
+            item.app_run,
+        )
+        print(f"{item.session['session_id']} / {item.app_run['run_id']}")
+        print(f"  output_dir: {output_dir}")
+        print(f"  command: {' '.join(shlex.quote(part) for part in command)}")
+
+    if args.dry_run:
+        return
+
+    mlflow.set_tracking_uri(config["mlflow_tracking_uri"])
+    mlflow.set_experiment(config["experiment_name"])
+
     for item in selections:
         print(f"Running {item.session['session_id']} / {item.app_run['run_id']}")
         run_one(config, item.session, item.app_run)

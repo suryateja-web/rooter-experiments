@@ -46,6 +46,12 @@ Then run:
 python runners/run_postprocessor.py --config configs/postprocessor.local.json
 ```
 
+Preview selected app runs and rendered commands without executing anything:
+
+```bash
+python runners/run_postprocessor.py --config configs/postprocessor.local.json --dry-run
+```
+
 The command template can use these placeholders:
 
 ```text
@@ -58,4 +64,3 @@ The command template can use these placeholders:
 
 Each selected app run becomes one MLflow run with dataset/postprocessor git
 commits, app model family tags, config params, and output artifacts.
-
